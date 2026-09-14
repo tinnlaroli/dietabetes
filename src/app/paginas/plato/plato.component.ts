@@ -76,21 +76,41 @@ interface Seccion {
         }
       } @else {
         @for (seccion of secciones; track seccion.titulo) {
-          <h2 class="encabezado-categoria">
+          <button
+            class="encabezado-categoria"
+            [attr.aria-expanded]="esEstaAbierta(seccion.titulo)"
+            (click)="alternarSeccion(seccion.titulo)"
+          >
             <tabler-icon [icon]="seccion.icono" [stroke]="1.5" />
-            {{ seccion.titulo }}
-          </h2>
-          <p class="nota-categoria">{{ seccion.nota }}</p>
-          <div class="lista-alimentos">
-            @for (alimento of alimentosDe(seccion.tipos); track alimento.id) {
-              <app-food-card
-                [alimento]="alimento"
-                [seleccionado]="estaSeleccionado(alimento.id)"
-                (tocar)="tocar(alimento)"
-                (quitar)="platoServicio.quitar(alimento.id)"
-              />
+            <span class="encabezado-texto">
+              <span class="encabezado-titulo">{{ seccion.titulo }}</span>
+              <span class="encabezado-cantidad"
+                >{{ cantidadEn(seccion.tipos) }} alimentos</span
+              >
+            </span>
+            @if (elegidosEn(seccion.tipos) > 0) {
+              <span class="chip chip--verde elegidos">{{ elegidosEn(seccion.tipos) }} en tu plato</span>
             }
-          </div>
+            <tabler-icon
+              class="flecha"
+              [class.abierta]="esEstaAbierta(seccion.titulo)"
+              icon="chevron-right"
+              [stroke]="2.5"
+            />
+          </button>
+          @if (esEstaAbierta(seccion.titulo)) {
+            <p class="nota-categoria">{{ seccion.nota }}</p>
+            <div class="lista-alimentos">
+              @for (alimento of alimentosDe(seccion.tipos); track alimento.id) {
+                <app-food-card
+                  [alimento]="alimento"
+                  [seleccionado]="estaSeleccionado(alimento.id)"
+                  (tocar)="tocar(alimento)"
+                  (quitar)="platoServicio.quitar(alimento.id)"
+                />
+              }
+            </div>
+          }
         }
       }
 
@@ -169,20 +189,58 @@ interface Seccion {
     .encabezado-categoria {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 1.2rem;
+      gap: 0.625rem;
+      width: 100%;
+      min-height: 56px;
+      padding: 0.625rem 1rem;
+      margin-top: 0.75rem;
+      background: #ffffff;
+      border: 2px solid #e5e1d8;
+      border-radius: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+    .encabezado-categoria:active {
+      transform: scale(0.99);
+    }
+    .encabezado-categoria > tabler-icon {
+      color: #2e7d32;
+      flex-shrink: 0;
+    }
+    .encabezado-texto {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      font-family: inherit;
+    }
+    .encabezado-titulo {
+      font-size: 1.1rem;
       font-weight: 800;
-      margin: 1.25rem 0 0.125rem;
       color: #212121;
     }
-    .encabezado-categoria tabler-icon {
-      color: #2e7d32;
+    .encabezado-cantidad {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #9e9e9e;
+    }
+    .elegidos {
+      flex-shrink: 0;
+    }
+    .encabezado-categoria .flecha {
+      color: #9e9e9e;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .encabezado-categoria .flecha.abierta {
+      transform: rotate(90deg);
     }
     .nota-categoria {
       color: #757575;
       font-size: 0.9rem;
       font-weight: 600;
-      margin-bottom: 0.625rem;
+      margin: 0.625rem 0 0.625rem;
+      padding: 0 0.25rem;
     }
     .sin-resultados {
       font-size: 1.05rem;
@@ -235,6 +293,27 @@ export class PlatoComponent {
       tipos: ['grasa'],
     },
   ];
+
+  readonly seccionAbierta = signal('Verduras (libres)');
+
+  esEstaAbierta(titulo: string): boolean {
+    return this.seccionAbierta() === titulo;
+  }
+
+  alternarSeccion(titulo: string) {
+    this.seccionAbierta.set(this.seccionAbierta() === titulo ? '' : titulo);
+  }
+
+  cantidadEn(tipos: Categoria[]): number {
+    return alimentos.filter((a) => tipos.includes(a.categoria)).length;
+  }
+
+  elegidosEn(tipos: Categoria[]): number {
+    return this.platoServicio.seleccion().reduce(
+      (total, e) => (tipos.includes(e.alimento.categoria) ? total + e.porciones : total),
+      0,
+    );
+  }
 
   readonly terminoBusqueda = signal('');
   private readonly normaliza = (s: string) =>
