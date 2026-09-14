@@ -8,7 +8,12 @@ import { TablerIconComponent } from '@tabler/icons-angular';
   template: `
     <nav class="nav-bar">
       @for (item of items; track item.ruta) {
-        <a class="nav-item" [routerLink]="item.ruta" routerLinkActive="activo">
+        <a
+          class="nav-item"
+          [routerLink]="item.ruta"
+          routerLinkActive="activo"
+          [routerLinkActiveOptions]="item.exacto ? { exact: true } : {}"
+        >
           <tabler-icon [icon]="item.icono" [stroke]="2" />
           <span class="nav-label">{{ item.label }}</span>
         </a>
@@ -63,7 +68,7 @@ import { TablerIconComponent } from '@tabler/icons-angular';
 })
 export class NavBarComponent {
   items = [
-    { ruta: '/', icono: 'home', label: 'Inicio' },
+    { ruta: '/', icono: 'home', label: 'Inicio', exacto: true },
     { ruta: '/plato', icono: 'tools-kitchen-2', label: 'Plato' },
     { ruta: '/guia', icono: 'book-2', label: 'Guia' },
     { ruta: '/ejercicio', icono: 'walk', label: 'Ejercicio' },

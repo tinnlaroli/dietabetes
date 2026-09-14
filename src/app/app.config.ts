@@ -48,6 +48,13 @@ import {
   IconTarget,
   IconBulb,
   IconStethoscope,
+  IconSearch,
+  IconCarrot,
+  IconPepper,
+  IconMushroom,
+  IconApple,
+  IconLemon,
+  IconGrape,
 } from '@tabler/icons-angular';
 
 export const appConfig: ApplicationConfig = {
@@ -103,6 +110,13 @@ export const appConfig: ApplicationConfig = {
       IconTarget,
       IconBulb,
       IconStethoscope,
+      IconSearch,
+      IconCarrot,
+      IconPepper,
+      IconMushroom,
+      IconApple,
+      IconLemon,
+      IconGrape,
     }),
   ],
 };

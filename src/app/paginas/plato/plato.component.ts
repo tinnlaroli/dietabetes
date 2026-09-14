@@ -6,7 +6,14 @@ import { ModalAvisoComponent } from '../../componentes/modal-aviso/modal-aviso.c
 import { PlatoService } from '../../servicios/plato.service';
 import { HistorialService } from '../../servicios/historial.service';
 import { alimentos } from '../../datos/alimentos';
-import { Alimento, TipoComida } from '../../modelo/modelo';
+import { Alimento, Categoria, TipoComida } from '../../modelo/modelo';
+
+interface Seccion {
+  titulo: string;
+  icono: string;
+  nota: string;
+  tipos: Categoria[];
+}
 
 @Component({
   selector: 'app-plato',
@@ -22,27 +29,70 @@ import { Alimento, TipoComida } from '../../modelo/modelo';
 
       <app-plato-resumen />
 
-      <div class="barras-categorias">
-        @for (categoria of categorias; track categoria.nombre) {
+      @if (platoServicio.seleccion().length > 0) {
+        <button class="boton boton--secundario vaciar" (click)="platoServicio.limpiar()">
+          <tabler-icon icon="x" [stroke]="2" />
+          Vaciar plato
+        </button>
+      }
+
+      <div class="buscador">
+        <tabler-icon class="buscador-icono" icon="search" [stroke]="2" />
+        <input
+          type="search"
+          inputmode="search"
+          autocomplete="off"
+          placeholder="Busca un alimento..."
+          [value]="terminoBusqueda()"
+          (input)="terminoBusqueda.set($any($event.target).value)"
+        />
+        @if (terminoBusqueda()) {
           <button
-            class="pestana"
-            [class.activo]="categoriaActiva() === categoria"
-            (click)="categoriaActiva.set(categoria)"
+            class="buscador-borrar"
+            (click)="terminoBusqueda.set('')"
+            aria-label="Limpiar busqueda"
           >
-            {{ categoria.nombre }}
+            <tabler-icon icon="x" [stroke]="2.5" />
           </button>
         }
       </div>
 
-      <div class="lista-alimentos">
-        @for (alimento of alimentosFiltrados(); track alimento.id) {
-          <app-food-card
-            [alimento]="alimento"
-            [seleccionado]="estaSeleccionado(alimento.id)"
-            (tocar)="tocar(alimento)"
-          />
+      @if (buscando()) {
+        @if (resultadosBusqueda().length === 0) {
+          <div class="tarjeta sin-resultados">
+            No encontre "{{ terminoBusqueda() }}". Prueba con otra palabra.
+          </div>
+        } @else {
+          <div class="lista-alimentos">
+            @for (alimento of resultadosBusqueda(); track alimento.id) {
+              <app-food-card
+                [alimento]="alimento"
+                [seleccionado]="estaSeleccionado(alimento.id)"
+                (tocar)="tocar(alimento)"
+                (quitar)="platoServicio.quitar(alimento.id)"
+              />
+            }
+          </div>
         }
-      </div>
+      } @else {
+        @for (seccion of secciones; track seccion.titulo) {
+          <h2 class="encabezado-categoria">
+            <tabler-icon [icon]="seccion.icono" [stroke]="1.5" />
+            {{ seccion.titulo }}
+          </h2>
+          <p class="nota-categoria">{{ seccion.nota }}</p>
+          <div class="lista-alimentos">
+            @for (alimento of alimentosDe(seccion.tipos); track alimento.id) {
+              <app-food-card
+                [alimento]="alimento"
+                [seleccionado]="estaSeleccionado(alimento.id)"
+                (tocar)="tocar(alimento)"
+                (quitar)="platoServicio.quitar(alimento.id)"
+              />
+            }
+          </div>
+        }
+      }
 
       <div class="pie-plato">
         <button
@@ -70,33 +120,82 @@ import { Alimento, TipoComida } from '../../modelo/modelo';
     :host {
       display: block;
     }
-    .barras-categorias {
+    .vaciar {
+      margin-bottom: 1rem;
+    }
+    .buscador {
       display: flex;
-      gap: 0.5rem;
-      overflow-x: auto;
-      padding: 1rem 0 0.25rem;
-    }
-    .pestana {
-      flex-shrink: 0;
-      padding: 0.6rem 1rem;
-      border-radius: 999px;
-      border: 2px solid #e5e1d8;
+      align-items: center;
+      gap: 0.625rem;
       background: #ffffff;
-      color: #5d5a52;
-      font-size: 0.95rem;
-      font-weight: 700;
-      transition: all 0.2s ease;
+      border: 2px solid #e5e1d8;
+      border-radius: 999px;
+      padding: 0.5rem 0.75rem 0.5rem 1rem;
+      margin-bottom: 1.25rem;
     }
-    .pestana.activo {
-      background: #2e7d32;
+    .buscador:focus-within {
       border-color: #2e7d32;
-      color: #ffffff;
+    }
+    .buscador-icono {
+      color: #9e9e9e;
+      flex-shrink: 0;
+    }
+    .buscador input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      font-family: inherit;
+      color: #212121;
+      background: transparent;
+      min-height: 40px;
+    }
+    .buscador input::placeholder {
+      color: #9e9e9e;
+    }
+    .buscador-borrar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: #eeeeee;
+      color: #616161;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .encabezado-categoria {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin: 1.25rem 0 0.125rem;
+      color: #212121;
+    }
+    .encabezado-categoria tabler-icon {
+      color: #2e7d32;
+    }
+    .nota-categoria {
+      color: #757575;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.625rem;
+    }
+    .sin-resultados {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #5d5a52;
+      text-align: center;
+      padding: 2rem 1rem;
     }
     .lista-alimentos {
       display: flex;
       flex-direction: column;
       gap: 0.625rem;
-      margin: 1rem 0;
+      margin-bottom: 0.25rem;
     }
     .pie-plato {
       position: sticky;
@@ -110,18 +209,43 @@ export class PlatoComponent {
   readonly platoServicio = inject(PlatoService);
   private readonly historial = inject(HistorialService);
 
-  readonly categorias = [
-    { nombre: 'Verduras', tipos: ['verdura'] },
-    { nombre: 'Proteinas', tipos: ['proteina'] },
-    { nombre: 'Carbohidratos', tipos: ['carbohidrato-fuerte', 'carbohidrato-medio'] },
-    { nombre: 'Grasas', tipos: ['grasa'] },
+  readonly secciones: Seccion[] = [
+    {
+      titulo: 'Verduras (libres)',
+      icono: 'leaf',
+      nota: 'Come la cantidad que quieras.',
+      tipos: ['verdura'],
+    },
+    {
+      titulo: 'Proteinas',
+      icono: 'egg',
+      nota: 'Elige al menos una, con maximo 2 porciones.',
+      tipos: ['proteina'],
+    },
+    {
+      titulo: 'Carbohidratos y fruta',
+      icono: 'bowl',
+      nota: 'Arroz, tortilla, frijoles y fruta: maximo 1 punto en total.',
+      tipos: ['carbohidrato-fuerte', 'carbohidrato-medio'],
+    },
+    {
+      titulo: 'Grasas buenas',
+      icono: 'avocado',
+      nota: 'Aguacate y frutos secos en cantidades chicas.',
+      tipos: ['grasa'],
+    },
   ];
 
-  readonly categoriaActiva = signal(this.categorias[0]);
-
-  readonly alimentosFiltrados = computed(() =>
-    alimentos.filter((a) => this.categoriaActiva().tipos.includes(a.categoria)),
-  );
+  readonly terminoBusqueda = signal('');
+  private readonly normaliza = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  private readonly terminoNormalizado = computed(() => this.normaliza(this.terminoBusqueda()).trim());
+  readonly buscando = computed(() => this.terminoNormalizado().length > 0);
+  readonly resultadosBusqueda = computed(() => {
+    const termino = this.terminoNormalizado();
+    if (!termino) return [];
+    return alimentos.filter((a) => this.normaliza(a.nombre).includes(termino));
+  });
 
   get puedeCompletar() {
     return this.platoServicio.puedeCompletar();
@@ -163,6 +287,10 @@ export class PlatoComponent {
       quiereNombre: '',
       muestraCambiar: false,
     };
+  }
+
+  alimentosDe(tipos: Categoria[]) {
+    return alimentos.filter((a) => tipos.includes(a.categoria));
   }
 
   tocar(alimento: Alimento) {

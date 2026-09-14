@@ -32,6 +32,13 @@ import { PlatoService } from '../../servicios/plato.service';
                 <tabler-icon [icon]="item.alimento.icono" [stroke]="1.5" />
                 <span class="item-nombre">{{ item.alimento.nombre }}</span>
                 <span class="item-porcion">x{{ item.porciones }}</span>
+                <button
+                  class="item-quitar"
+                  (click)="quitar(item.alimento.id)"
+                  [attr.aria-label]="'Quitar ' + item.alimento.nombre"
+                >
+                  <tabler-icon icon="x" [stroke]="3" />
+                </button>
               </div>
             }
           </div>
@@ -118,6 +125,23 @@ import { PlatoService } from '../../servicios/plato.service';
       font-weight: 700;
       margin-left: 0.25rem;
     }
+    .item-quitar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      margin-left: 0.25rem;
+      border: none;
+      border-radius: 50%;
+      background: #fdecec;
+      color: #c62828;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .item-quitar:active {
+      transform: scale(0.92);
+    }
   `,
 })
 export class PlatoResumenComponent {
@@ -140,5 +164,9 @@ export class PlatoResumenComponent {
     if (t <= 0.5) return 'verde';
     if (t <= 0.75) return 'amarillo';
     return 'rojo';
+  }
+
+  quitar(id: string) {
+    this.platoServicio.quitar(id);
   }
 }
